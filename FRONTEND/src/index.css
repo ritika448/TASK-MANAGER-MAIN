@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #0f172a;
+  background:
+    radial-gradient(circle at top left, rgba(86, 124, 141, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(200, 217, 230, 0.28), transparent 24%),
+    linear-gradient(180deg, #feffff 0%, #f7f9fb 45%, #f5efeb 100%);
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(86, 124, 141, 0.14), transparent 22%),
+    radial-gradient(circle at right center, rgba(200, 217, 230, 0.22), transparent 18%),
+    linear-gradient(180deg, #feffff 0%, #f8fbfd 48%, #f5efeb 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(86, 124, 141, 0.18);
+}
+
+.page-shell {
+  animation: page-enter 0.42s ease;
+}
+
+.page-reveal {
+  opacity: 0;
+  transform: translateY(24px) scale(0.988);
+  animation: stagger-reveal 1.05s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+  will-change: transform, opacity;
+}
+
+.glass-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(47, 65, 86, 0.1);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stagger-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.988);
+    filter: blur(6px);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}

@@ -1,0 +1,678 @@
+Project Overview ­ Task Manager App
+
+27 June 2025 01:20 PM
+
+Project Overview:
+
+A multi-user task management web application designed to enable users to create, assign, track, and
+manage tasks efficiently. Offers card and list views, calendar scheduling, sorting, grouping, recurring
+tasks.
+
+Objective:
+
+- Simple yet powerful task manager for teams.
+- Access for task creation, assignment, and calendar view.
+- Recurring task support for routine workflows.
+- Visual dashboards and responsive UI for a modern experience.
+
+Technical Requirements:
+
+   · Frontend: React.js (Vite), Tailwind CSS, MUI, Typescript.
+   · Backend: .Net 8.0,Repository Pattern, Dapper
+   · Database: SQL Server
+   · Authentication: JWT Authentication
+   · File Storage: Azure Blob Storage
+   · Other Services: Azure Communication Service- Email
+Backend Project structure
+Solution name: TaskManager.sln
+    TaskManager.API
+    TaskManager.DAL
+    TaskManager.Model
+    TaskManager.Database
+
+Modules:
+
+   · Login Management
+   · City Management
+   · User Management
+   · Task Management
+
+                                                       Task Manager Page 1
+Login Management
+
+Tuesday, July 01, 2025  5:09 PM
+
+   Login Management
+
+1. Login Page
+      a. Frontend
+              i. Login:
+                    1. Route: {domainName}/Login
+                      2. Fields:
+                             a. Email ID - Text Field
+                             b. Password - Text Field
+                             c. Remember Me ­ Checkbox
+                      3. Buttons: Sign up | Login.
+                      4. Features:
+                             a. Display Logo
+                             b. Implement Login:
+                                    a. Validate Email ID (regex, required, valid format)
+                                    b. Validate Password (required, min/max length)
+                                    c. Toast notifications on errors (invalid credentials, server errors)
+                             c. Remember Me Functionality:
+                                    a. If checked, store user in local Storage, else use session Storage.
+                                    b. Automatically login if valid token found on page load.
+                                    c. If token invalid/expired, redirect to login silently.
+                             d. Protected Routes:
+                                    a. Redirect unauthenticated users to Login before showing any layout/data.
+                                    b. Middleware/Guard on frontend routes.
+
+ii. Forgot Password:
+      1. Route: {domainName}/ForgotPassword
+       2. Fields: Email ID - Text Field
+       3. Buttons: Send Mail | Back to Login
+       4. Features:
+              a. Display Logo
+              b. If user enter valid email then send mail to user
+              c. Mail should contains email Body with a link that redirects to Reset password page
+              d. Validate Email (regex, required, user exists)
+
+                                 Task Manager Page 2
+iii. Reset Password:
+       1. Route: {domainName}/ResetPassword/{ResetPasswordCode}
+        2. Fields:
+               a. New Password - Text Field
+               b. Confirm Password - Text Field
+        3. Buttons: Reset Password
+        4. Features:
+               a. Display Logo
+               b. On successfully update password, redirect to login page
+               c. Validate token:
+                      a. If invalid or expired  redirect to Invalid Page
+               d. Validate password policy:
+                      a. Min 8 chars, 1 uppercase, 1 number, 1 special char
+               e. Match confirm password
+                f. On success:
+                      a. Update password
+                      b. Redirect to login with toast "Password reset successful"
+
+iv. Invalid Page
+       1. Route: {domainName}/InvalidPage
+        2. Show message like:
+               a. "Invalid or Expired Link"
+               b. "Session Expired"
+        3. Buttons: "Back to Login"
+        4. Use this page globally across the app
+
+                                             Task Manager Page 3
+b. Backend:
+   Authentication:
+
+    POST api/UserManagement/Authentication/Login
+        - Request: EmailID, Password
+        - Check whether a valid user exists.
+        - Generate a JWT Token valid for 1 day only.
+        - In Claims only add UserID
+        - Response:
+                AuthToken
+
+   Forget Password:
+
+    Route: api/UserManagement/ForgotPassword
+       1. /SendResetPasswordCode
+        - Para: EmailID
+        - Check for user's existence.
+        - Generate a reset password code and set expiration time to 10 minutes.
+        - Send an email that includes the page url to Reset Password page. (Ask Purva for page url)
+       2. /ValidateResetPasswordCode
+        - Para: ResetPasswordCode
+        - Check whether the code is valid or not.
+        - If code does not exists, return "Invalid Code."
+        - If code exists but is expired, return "Code is expired."
+        - Else return Ok()
+       3. /ResetPassword
+        - Request: ResetPasswordCode, Password
+        - Check whether the code is valid or not.
+        - If code does not exists, return "Invalid Code."
+        - If code exists but is expired, return "Code is expired."
+        - If code is Valid, then update the password.
+
+1. Sign up Page
+
+                                                     Task Manager Page 4
+a. Frontend
+       i. Signup:
+             1. Route: {domainName}/Signup
+              2. Fields:
+                      i. First Name ­ Text Field
+                      ii. Last Name ­ Text Field
+                     iii. Email ID - Text Field
+                     iv. Address ­ Text Field
+                      v. Country - Dropdown
+                     vi. State - Dropdown (Empty until Country selected)
+                    vii. City - Dropdown (Empty until State selected)
+                    viii. Zip ­ Text Field
+                     ix. Password - Text Field
+                      x. Confirm Password ­ Text Field
+              3. Buttons: Sign up | Back to Login.
+              4. Features:
+                      a. Display logo.
+                      b. Validate all fields (required, max lengths)
+                      c. Validate dropdown dependencies - Country , State, City work together
+                              i. State and City Should be empty until country not selected
+                             ii. City should be empty until state not selected
+                            iii. State will be fetched according to country selected
+                            iv. City will be fetched according to state selected
+                      d. Save signup detail and redirect to login with interactive way
+                              i. Example: show message signup successfully in model popup and timer of 10 seconds that will automatically redirect to login screen and also add a button to redirect to Login
+                                 page
+
+b. Backend:
+
+        User Registration:
+
+           POST api/UserManagement/UserRegistration
+                - Request: First Name, Last Name, Email ID, Password, Address, CountryName, StateName, CityName, Zip
+                - If Address is entered, then CityName, StateName, CountryName is mandatory.
+                - If email exists, return "Email is already registered." with status code 400
+                - If not, create record for user.
+                - Send an email regarding successful registration.
+
+                       Condition For city, state and country.
+                               Check whether the entered CountryName exists.
+                                      If Exists, use it.
+                                      Otherwise, create new country and use it.
+                               Check wether the entered StateName exists in the selected country.
+                                      If Exists, use it.
+                                      Otherwise, create new state and use it.
+                               Check wether the entered CityName exists in the selected state.
+                                      If Exists, use it.
+                                      Otherwise, create new city and use it.
+
+User (Form)                                         User (Table)
+                                                    UserID
+First Name   Text box(50) Required                  FirstName          Int, PK, Auto, Not Null
+Last Name                                           LastName           Nvarchar(50), not null
+Email ID     Text box(50) Required                  EmailID            Nvarchar(50), not null
+Password                                            Password           Nvarchar(50), not null, Unique
+             Text box(50) Email format validation,
+Address                         required, unique    Address
+Country
+State        Textbox(18)  Minimum 8, maximum 18     CityID             Nvarchar(100), not null, encrypted        Use HMACSHA 256 algorithm
+                          chars, enforce password
+City                      policy, required          ZipCode            *use hashing and salting for encryption.
+
+Zip          Textbox(100) optional                                     Nvarchar(100), not null
+
+             Dropdown Optional
+
+             Dropdown     - Optional
+                          - Show states from
+                           selected country only.
+
+             Dropdown     - Optional                                   Int, null
+                          - Show cities from                           FK-City
+                           selected state only.
+                                                                       Varchar(6), null
+             Textbox(6) -Optional
+
+                                                    ResetPasswordCode  Unique Identifier, null
+
+                                                    ResetPasswordCodeValiddUpto Datetime, null
+
+                                                    Default Fields
+
+Default Fields:                                     Validation:
+CreatedBy Int, null                                 All required fields must be validated for empty input and restricted to their defined maximum lengths.
+                                                    Display clear messages such as
+               FK-User
+                                                    Standard Validation Message Format:
+CreatedOn DateTime, not null                               "{FieldName} must be {MaxLength} characters or fewer."
+
+UpdatedBy Int, null                                 Standard Required Validation Message Format:
+               FK-User                                            "{FieldName} is required."
+
+UpdatedOn DateTime, not null                        For Invalid Email: Please enter a valid email address.
+                                                    For Password: Password must be at least 8 characters, including one uppercase letter, one number, and
+In each GetModel and GetList API, need to pass      one special character.
+   a. CreatedOn                                     For Confirm Password: Passwords do not match.
+  b. CreatedByUserName
+   c. UpdatedOn                                     Ensure error messages are concise, consistent in tone, and visible near the relevant field or as toast
+  d. UpdatedByUserName                              notifications for a seamless user experience.
+
+                          Task Manager Page 5
+User Management
+
+02 July 2025 04:43 PM
+
+ Side Navigation
+
+     a. Add Side navigation menu
+     b. Add Header panel
+      c. If already exist in current theme then good to go
+
+ Home Page
+
+     a. Add Home page with a welcome message
+
+ Important
+
+     1. Should implement skeleton for each page
+             a. Create a common component for list, editor and views and use them on page
+
+     2. Should maintain routes for each page
+
+                                                       Task Manager Page 6
+User Management
+
+  1. User Profile Page
+          a. Frontend
+                 i. Route: {domainName}/Profile
+                  ii. Fields
+                         1) First Name ­ Text Field
+                         2) Last Name ­ Text Field
+                         3) Email ID - Text Field
+                         4) Address ­ Text Field
+                         5) Country - Dropdown
+                         6) State - Dropdown (Empty until Country selected)
+                         7) City - Dropdown (Empty until State selected)
+                         8) Zip ­ Text Field
+                         9) Checkbox to confirm user to change password
+                        10) Password - Text Field
+                        11) Confirm Password ­ Text Field
+                        12) Upload Profile Image
+                 iii. Buttons: Update | Cancel
+                 iv. Features:
+                         1) Show Profile option from top left corner under Profile image icon
+                         2) On click of it, open a page with prefill logged in user information
+                         3) Password and Confirm password should be visible if user checks the checkbox
+                         4) If user modify email ID or password then it should logged out user by showing a toast notification
+                         5) Use current user apis to fetch/display and update record
+                         6) If user updates profile image then top left corner image should be updated automatically
+                         7) Validate all fields (required, max lengths)
+                         8) Validate dropdown dependencies - Country , State, City work together
+                                  i. State and City Should be empty until country not selected
+                                 ii. City should be empty until state not selected
+                                 iii. State will be fetched according to country selected
+                                 iv. City will be fetched according to state selected
+
+                                                    Task Manager Page 7
+       b. Backend
+
+            i. Current User:
+
+                   Route: api/UserManagement/CurrentUser
+                      1) /GetModel
+                        Return current user detail
+                      2) /Update
+                        Update current user detail
+                      3) /CheckDuplicateEmailID
+                        Request: EmailID
+                        Return Conflict if found duplicate.
+
+2. User Page
+       a. Frontend
+               i. User List Page Route: {domainName}/Users
+               ii. Data grid Columns
+                      1) Name
+                      2) Email ID
+                      3) Address
+                      4) City (Format City Name, State Name, Country Name)
+                      5) Zip
+                      6) Actions - Edit | Delete
+             iii. Add User Editor Page Route: {domainName}/Users/Create
+                      1) Fields should like taken in sign up form
+                      2) Add profile image uploader too
+             iv. Edit User Editor Page Route: {domainName}/Users/Edit/{id}
+                       1) Fields should like taken in sign up form
+                       2) Add profile image uploader too
+                       3) Password and confirm password should be visible via checkbox
+
+                                                 Task Manager Page 8
+             v. User:
+
+                 Folder: API/UserManagement
+                 Routes: api/UserManagement/User
+
+                    1) /GetList - To fetch all the records
+                      Request: optional ID para.
+
+                    2) /GetModel/{ID} - To fetch the record by ID
+                    3) /GetLookupList - To return dropdown datasource.
+                      Return list of all users.
+                      Response: UserID, UserName
+                    4) /Insert - To create record
+                      Return inserted ID
+                    5) /Update - To update record
+                      Take additional para "UpdatePassword". Allow to update the password only if it is true.
+                      Return updatedOn value.
+                    6) /Delete/{ID} - Delete record by ID
+                    7) /CheckDuplicateEmailID
+                      Request: EmailID, ExcludeID
+                      Return Conflict if found duplicate.
+
+User (Form)                                          User (Table)
+                                                     UserID
+First Name   Text box(50) Required                   FirstName       Int, PK, Auto, Not                        Default Fields:
+Last Name                                            LastName        Null                                      CreatedBy Int, null
+Email ID     Text box(50) Required                   EmailID
+Password                                             Password        Nvarchar(50), not                                         FK-User
+             Text box(50)  Email format validation,                  null                Use
+             Textbox(18)   required, unique          Address                             HMACSHA               CreatedOn DateTime, not null
+                                                                     Nvarchar(50), not   256
+                           Minimum 8, maximum 18                     null                algorithm             UpdatedBy Int, null
+                           chars, enforce password                                                                             FK-User
+                           policy, required                          Nvarchar(50), not
+                                                                     null, Unique                              UpdatedOn DateTime, null
+
+                                                                     Nvarchar(100), not                        In each GetModel and GetList API, need to pass
+                                                                     null, encrypted                              a. CreatedOn
+                                                                     *use hashing and                             b. CreatedByUserName
+                                                                     salting for                                  c. UpdatedOn
+                                                                     encryption.                                  d. UpdatedByUserName
+
+Address      Textbox(100) optional                                   Nvarchar(100), not
+Country                                                              null
+State
+             Dropdown      Optional                  CityID          Int, null
+City         Dropdown                                ZipCode         FK-City
+                           - Optional
+Zip          Dropdown      - Show states from                        Varchar(6), null
+
+             Textbox(6)     selected country only.
+
+                           - Optional
+                           - Show cities from
+
+                            selected state only.
+
+                           -Optional
+
+                                                     ResetPasswordC Unique Identifier,
+
+                                                     ode             null
+
+                                                     ResetPasswordC Datetime, null
+                                                     odeValiddUpto
+
+                                                     Default Fields
+
+                           Task Manager Page 9
+City Management
+
+27 June 2025 09:48 AM
+
+                                                       Task Manager Page 6
+Country
+
+27 June 2025  09:49 AM
+
+Country                                                                                  Country (Form)                      Country (Table)
+                                                                                         Country Name Textbox(50) -Required
+  1. Frontend                                                                                                                CountryID        Int, PK, Auto, Not Null
+   · Add/Edit Country Page
+                                                                                                                             CountryName Nvarchar(50), not null, Unique
+           Route:
+                   Add: {domainName}/Countries/Create                                                                        Default Fields
+                   Edit: {domainName}/Countries/Edit/{id}
+
+           Fields:
+                 1. Country Name ­ Text Field
+                          Required
+                          Max Length: 50
+                          Must be unique
+
+           Buttons: Save | Cancel
+           Validations:
+
+                   Country Name is required
+                   Max length of 50 characters
+                   Check for duplicate Country Name before submit
+           Features:
+                   Show toast notification on success/failure
+                   If duplicate Country Name found, show appropriate validation message
+   · Country List Page
+           Route: {domainName}/Countries
+           Data Grid Columns:
+                 1. Country Name
+                 2. Actions ­ Edit | Delete
+
+  2. Backend
+                Routes: api/CityManagement/Country
+                  1. /GetList - To fetch all the records
+                                  i. Take optional ID para.
+                 2. /GetModel - To fetch the record by ID
+                 3. /GetLookupList - To return dropdown datasource.
+                 4. /Insert - To create record
+                                 i. Return inserted ID
+                 5. /Update - To update record
+                                 i. Return updatedOn value.
+                 6. /Delete/{ID} - Delete record by ID
+
+                        Task Manager Page 7
+State         09:49 AM
+
+27 June 2025
+
+State                                                                                             State (Form)                     State (Table)
+
+  1. Frontend                                                                                     State Name Textbox(50) Required  StateID         Int, PK, Auto, Not Null
+            Add/Edit State Page                                                                   Country Name Dropdown Required
+                    Route:                                                                                                         StateName Nvarchar(50), not null, Unique
+                            Add: {domainName}/States/Create
+                                                                                                                                   CountryID       Int, not null
+                            Edit: {domainName}/States/Edit/{id}                                                                                    FK-Country
+
+                    Fields:                                                                                                        Default Fields
+                          1) State Name ­ Text Field
+                                   Required
+                                   Max Length: 50
+                                   Must be unique within the selected country
+                          2) Country Name ­ Dropdown
+                                   Required
+                                   Load options from Country /GetLookupList
+
+                    Buttons: Save | Cancel
+                    Validations:
+
+                            State Name is required and max 50 characters
+
+                            Country selection is required
+
+                            State Name must be unique within the selected country (checked via
+
+                               /CheckDuplicateStateName)
+
+                    Features:
+                            Show toast message for success or duplicate state
+
+                            On save, show loader or disable buttons to prevent double submission
+            State List Page
+
+                    Route: {domainName}/States
+                    Data Grid Columns:
+
+                          1) State Name
+
+                          2) Country Name
+
+                          3) Actions ­ Edit | Delete
+  2. Backend
+
+               Routes: api/CityManagement/State
+
+                      i. /GetList - To fetch all the records
+
+                                    a) Take optional ID para.
+
+                   ii. /GetModel - To fetch the record by ID
+
+                  iii. /GetLookupList - To return dropdown datasource.
+
+                  iv. /Insert - To create record
+
+                                  a) Return inserted ID
+
+                   v. /Update - To update record
+
+                                  a) Return updatedOn value.
+
+                  vi. /Delete/{ID} - Delete record by ID
+
+                 vii. /CheckDuplicateStateName
+
+                    Request: StateName, CountryID, ExcludeID
+                    Check whether the entered state name exist within the selected country.
+
+                        Task Manager Page 8
+City          09:49 AM
+
+27 June 2025
+
+City                                                                                           City                                                               City (Table)
+                                                                                               (Form)
+  1. Frontend
+                                                                                               City Name Textbox(50  Required                                     CityID        Int, PK, Auto, Not Null
+           · Add/Edit City Page                                                                               )      Required                                     CityName
+                    Route:                                                                                                                                                      Nvarchar(50), not null,
+                            Add: {domainName}/Cities/Create                                    StateID Dropdown                                                   StateID       Unique
+                            Edit: {domainName}/Cities/Edit/{id}
+                    Fields:                                                                    Zip Code  Memo edit Allow to enter multiple zip code.              ZipCode       Int, not null
+                          1. City Name ­ Text Field                                                                      Each zip code must be upto 6 characters                FK-State
+                                                                                                                         only.
+                                    Required                                                                                                                                    Nvarchar(50), null
+
+                                    Max Length: 50                                                                                                                Default
+                                                                                                                                                                  Fields
+                                    Must be unique within the selected state
+
+                          2. State Name ­ Dropdown
+
+                                    Required
+
+                                        Options fetched from /State/GetLookupList
+
+                               3. Zip Code(s) ­ Memo Field / Multi-line Text Area
+
+                                    Optional
+
+                                    Allows multiple zip codes, separated by comma or new line
+
+                                    Each zip code must be up to 6 characters
+                    Buttons: Save | Cancel
+                    Validations:
+
+                            City Name is required and max 50 characters
+                            State selection is required
+                            City Name must be unique within the selected state (checked via
+
+                               /CheckDuplicateCityName)
+
+                            Each zip code must be  6 characters (validated individually)
+                    Features:
+
+                            Show toast on save or duplication
+                            Highlight any invalid zip entries
+                            Optionally: show count of valid zip codes
+           · City List Page
+                    Route: {domainName}/Cities
+                    Data Grid Columns:
+                          1. City Name
+
+                          2. State Name
+
+                          3. Zip Code(s)
+
+                          4. Actions ­ Edit | Delete
+
+  2. Backend
+
+               Routes: api/CityManagement/City
+
+                      i. /GetList - To fetch all the records
+
+                                    a) Take optional ID para.
+
+                  ii. /GetModel - To fetch the record by ID
+
+                  iii. /GetLookupList - To return dropdown datasource.
+
+                  iv. /Insert - To create record
+
+                                  a) Return inserted ID
+
+                   v. /Update - To update record
+
+                                  a) Return updatedOn value.
+
+                  vi. /Delete/{ID} - Delete record by ID
+
+                 vii. /CheckDuplicateCityName
+                    Request: CityName, StateID, ExcludeID
+
+                        Task Manager Page 9
+Task Management                                                                               Task (Form)                                     Task (Table)
+                                                                                                                                              TaskID
+27 June 2025 01:15 PM                                                                         Task Name Textbox(50)         Required                              Int, PK, Auto,
+                                                                                              Description Html editor                         TaskName            Not Null
+      1. Frontend
+                Task List View                                                                                                                DescrPlainText      Nvarchar(50)
+                        Route: {domainName}/Tasks                                                                                             DescrFormattedText  Not Null
+                        View Type: Tab/Toggle between List View and Card View
+                        List View Features:                                                                                                                       Nvarchar(max)
+                               Tabular layout using Data Grid
+                               Columns:                                                                                                                           Nvarchar(max)
+                                      a) Task Name
+                                     b) Description (Plain Text, truncated)                   AssignedTo   Multi-select     Fetch data        DueDate             DateTime null
+                                      c) Assigned To (comma-separated names)                               dropdown                           Priority
+                                     d) Due Date                                              Due Date                      0: Low                                Tinyint, not null
+                                     e) Due Status (Overdue / Today / Tomorrow / Due {date})  Priority     Date picker      1: Medium                             Default 0
+                                      f) Priority (Low/Medium/High)                                                         2: High
+                                      g) Completed (Check icon or toggle)
+                                     h) Actions ­ Edit | Delete | Mark Complete                                                               Completed           Bit Not Null
+                Card View Features:                                                                                                                               Default false
+                        Each task rendered as a card with:                                                                                    CompletedByUserID
+                               Task Name                                                                                                                          Int, null
+                               Priority Badge                                                                                                 CompletedOn         FK-User
+                               Description (Plain text preview)                                                                               Default Fields
+                               Assigned To (comma-separated names)                                                                                                DateTime null
+                               Due Date with status indicator badge
+                               Completed toggle or mark as complete button                    TaskAssignedUser (Table)      Int PK, not null
+                               Menu or buttons for Edit | Delete                              TaskID                        FK-Task
+                Filterable by (Both views):
+                        Completed                                                             AssignedUserID                Int PK, not null
+                        Priority                                                                                            FK-User
+                        Assigned To                                                           Create Composite Primary Key
+                        Due Date Range
+                Add/Edit Task Page
+                        Route:
+                               Add: {domainName}/Tasks/Create
+                               Edit: {domainName}/Tasks/Edit/{id}
+                        Fields:
+                              1) Task Name ­ Text Field
+                                       Required
+                                       Max Length: 50
+                              2) Description ­ Rich Editor
+                                       Rich text support, stores plain and formatted version
+                              3) Assigned To ­ Multi-select Dropdown
+                                         Fetch user list from backend
+                                 4) Due Date ­ Date Picker (optional)
+                              5) Priority ­ Radio buttons or dropdown
+                                       0: Low
+                                       1: Medium
+                                       2: High
+                              6) Completed ­ Checkbox (visible only for update)
+                        Buttons: Save | Cancel
+                        Validations:
+                               Task Name is required (max 50 chars)
+                               At least one user should be selected
+                               Due Date must be a valid future or present date
+                               Description allowed to be empty
+                        Features:
+                               On update, completed tasks allow unchecking
+                               Rich text editor preview pane
+                               Auto-refresh list view after create/edit
+
+Task Manager Page 10
+Task Manager Page 11
+
