@@ -18,6 +18,22 @@ export type UserRecord = {
   managerName?: string;
   managerEmail?: string;
   profileImage: string;
+  workspaceName?: string;
+  timezone?: string;
+  defaultTaskPriority?: string;
+  defaultTaskView?: string;
+  notificationSettings?: {
+    email: boolean;
+    dueDates: boolean;
+    weeklySummary: boolean;
+    push: boolean;
+  };
+  appearanceSettings?: {
+    theme: string;
+    secureSession: boolean;
+    twoFactorEnabled?: boolean;
+    multiSessionSignOut?: boolean;
+  };
 };
 
 export type UserLookup = {
@@ -43,6 +59,22 @@ export type UserUpsertPayload = {
   role?: "manager" | "employee";
   password?: string;
   updatePassword?: boolean;
+  workspaceName?: string;
+  timezone?: string;
+  defaultTaskPriority?: string;
+  defaultTaskView?: string;
+  notificationSettings?: {
+    email: boolean;
+    dueDates: boolean;
+    weeklySummary: boolean;
+    push: boolean;
+  };
+  appearanceSettings?: {
+    theme: string;
+    secureSession: boolean;
+    twoFactorEnabled?: boolean;
+    multiSessionSignOut?: boolean;
+  };
 };
 
 export const usersApi = {

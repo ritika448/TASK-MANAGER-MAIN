@@ -262,8 +262,9 @@ export function UserForm({
 
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>Country</InputLabel>
+              <InputLabel id="country-label">Country</InputLabel>
               <Select
+                labelId="country-label"
                 value={form.country}
                 label="Country"
                 onChange={(event) =>
@@ -274,12 +275,7 @@ export function UserForm({
                     city: "",
                   }))
                 }
-                displayEmpty
-                renderValue={(value) =>
-                  value ? lookups.countries.find((country) => country.id === value)?.name ?? value : "Select Country"
-                }
               >
-                <MenuItem value="">Select Country</MenuItem>
                 {lookups.countries.map((country) => (
                   <MenuItem key={country.id} value={country.id}>
                     {country.name}
@@ -291,8 +287,9 @@ export function UserForm({
 
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>State</InputLabel>
+              <InputLabel id="state-label">State</InputLabel>
               <Select
+                labelId="state-label"
                 value={form.state}
                 label="State"
                 disabled={!form.country}
@@ -303,12 +300,7 @@ export function UserForm({
                     city: "",
                   }))
                 }
-                displayEmpty
-                renderValue={(value) =>
-                  value ? filteredStates.find((state) => state.id === value)?.name ?? value : "Select State"
-                }
               >
-                <MenuItem value="">Select State</MenuItem>
                 {filteredStates.map((state) => (
                   <MenuItem key={state.id} value={state.id}>
                     {state.name}
@@ -320,18 +312,14 @@ export function UserForm({
 
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>City</InputLabel>
+              <InputLabel id="city-label">City</InputLabel>
               <Select
+                labelId="city-label"
                 value={form.city}
                 label="City"
                 disabled={!form.state}
                 onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
-                displayEmpty
-                renderValue={(value) =>
-                  value ? filteredCities.find((city) => city.id === value)?.name ?? value : "Select City"
-                }
               >
-                <MenuItem value="">Select City</MenuItem>
                 {filteredCities.map((city) => (
                   <MenuItem key={city.id} value={city.id}>
                     {city.name}

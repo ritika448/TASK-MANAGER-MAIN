@@ -11,7 +11,15 @@ export type TaskRecord = {
   }>;
   dueDate: string | null;
   priority: number;
+  status: string;
   completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  manager: {
+    id: string;
+    name: string;
+    emailId: string;
+  } | null;
 };
 
 export type TaskUpsertPayload = {
@@ -20,6 +28,7 @@ export type TaskUpsertPayload = {
   assignedUserIds: string[];
   dueDate: string | null;
   priority: number;
+  status?: string;
   completed?: boolean;
 };
 

@@ -20,7 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDeleteConfirm } from "../../../components/feedback/DeleteConfirmProvider";
 import { useToast } from "../../../components/feedback/ToastProvider";
 import { usersApi } from "../../users/api/users.api";
@@ -50,7 +50,43 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState(1);
+  const [status, setStatus] = useState("pending");
   const [completed, setCompleted] = useState(false);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+
+  const applyVisualFormat = useCallback((command: string, value: string | undefined = undefined) => {
+    if (descriptionRef.current) {
+      descriptionRef.current.focus();
+    }
+    document.execCommand(command, false, value);
+    // Sync state after formatting
+    if (descriptionRef.current) {
+      setDescription(descriptionRef.current.innerHTML);
+    }
+  }, []);
+
+  const handleDuplicate = useCallback(() => {
+    setTask(null);
+    setSelectedTaskId(null);
+    setMode("create");
+    // Preserve the current description but in create mode
+    if (descriptionRef.current) {
+      // The state 'description' already has the content, but we ensure the div is synced
+      descriptionRef.current.innerHTML = description;
+    }
+    showToast("Task details duplicated. You can now save it as a new task.", "info");
+  }, [description, showToast]);
+
+  const handleSetReminder = useCallback(() => {
+    showToast("Reminder functionality is coming soon!", "info");
+  }, [showToast]);
+
+  const handleLink = useCallback(() => {
+    const url = prompt("Enter the URL:");
+    if (url) {
+      applyVisualFormat("createLink", url);
+    }
+  }, [applyVisualFormat]);
 
   useEffect(() => {
     async function loadDialogData() {
@@ -69,9 +105,13 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
         setTask(taskModel);
         setTaskName(taskModel?.taskName ?? "");
         setDescription(taskModel?.description ?? "");
+        if (descriptionRef.current) {
+          descriptionRef.current.innerHTML = taskModel?.description ?? "";
+        }
         setAssignedUserIds(taskModel?.assignedUsers.map((user) => user.id) ?? []);
         setDueDate(taskModel?.dueDate ? taskModel.dueDate.slice(0, 10) : "");
         setPriority(taskModel?.priority ?? 1);
+        setStatus(taskModel?.status ?? "pending");
         setCompleted(taskModel?.completed ?? false);
       } catch (error) {
         showToast(error instanceof Error ? error.message : "Unable to open task dialog.", "error");
@@ -84,11 +124,29 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
     void loadDialogData();
   }, [mode, selectedTaskId, showToast]);
 
+  // Special effect to sync visual editor when dialog opens and data is ready
+  useEffect(() => {
+    if (mode === "edit" && task && descriptionRef.current) {
+      if (descriptionRef.current.innerHTML !== task.description) {
+        descriptionRef.current.innerHTML = task.description;
+      }
+    } else if (mode === "create" && descriptionRef.current) {
+      descriptionRef.current.innerHTML = "";
+    }
+  }, [mode, task]);
+
   const value = useMemo(
     () => ({
       openCreateTaskDialog: () => {
-        setSelectedTaskId(null);
         setTask(null);
+        setTaskName("");
+        setDescription("");
+        setAssignedUserIds([]);
+        setDueDate("");
+        setPriority(1);
+        setStatus("pending");
+        setCompleted(false);
+        setSelectedTaskId(null);
         setMode("create");
       },
       openEditTaskDialog: (taskId: string) => {
@@ -117,7 +175,7 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
         assignedUserIds,
         dueDate: dueDate || null,
         priority,
-        completed,
+        status,
       };
 
       if (mode === "edit" && selectedTaskId) {
@@ -211,24 +269,88 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
                           color: "#64748b",
                         }}
                       >
-                        <Typography sx={{ fontWeight: 700 }}>B</Typography>
-                        <Typography sx={{ fontStyle: "italic" }}>I</Typography>
-                        <Typography sx={{ textDecoration: "underline" }}>U</Typography>
-                        <Typography>•</Typography>
-                        <Typography>≡</Typography>
-                        <Typography>-</Typography>
-                        <Typography>🔗</Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("bold");
+                          }}
+                          sx={{ fontWeight: 700, cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          B
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("italic");
+                          }}
+                          sx={{ fontStyle: "italic", cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          I
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("underline");
+                          }}
+                          sx={{ textDecoration: "underline", cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          U
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("insertUnorderedList");
+                          }}
+                          sx={{ cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          •
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("insertOrderedList");
+                          }}
+                          sx={{ cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          ≡
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyVisualFormat("strikeThrough");
+                          }}
+                          sx={{ cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          -
+                        </Typography>
+                        <Typography
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleLink();
+                          }}
+                          sx={{ cursor: "pointer", "&:hover": { color: "#2F4156" } }}
+                        >
+                          🔗
+                        </Typography>
                       </Stack>
                       <Box sx={{ p: 1.5 }}>
-                        <TextField
-                          multiline
-                          minRows={5}
-                          fullWidth
-                          placeholder="Describe the task details..."
-                          variant="standard"
-                          value={description}
-                          onChange={(event) => setDescription(event.target.value)}
-                          InputProps={{ disableUnderline: true }}
+                        <Box
+                          contentEditable
+                          ref={descriptionRef}
+                          onInput={(e) => setDescription(e.currentTarget.innerHTML)}
+                          onBlur={(e) => setDescription(e.currentTarget.innerHTML)}
+                          sx={{
+                            minHeight: 120,
+                            outline: "none",
+                            fontSize: 14,
+                            color: "#1e293b",
+                            "&:empty:before": {
+                              content: '"Describe the task details..."',
+                              color: "#94a3b8",
+                            },
+                            "& ul": { pl: 2, my: 1 },
+                            "& ol": { pl: 2, my: 1 },
+                          }}
                         />
                       </Box>
                     </Paper>
@@ -317,25 +439,31 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
                     <Typography sx={{ mb: 1, fontSize: 14, fontWeight: 700, color: "#475569" }}>
                       Status
                     </Typography>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.5,
-                        border: "1px solid #e5e7eb",
-                        borderRadius: 2.5,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Typography sx={{ color: "#64748b" }}>Current Status</Typography>
-                      <Chip
-                        label={completed ? "Completed" : "In Progress"}
-                        size="small"
-                        onClick={() => setCompleted((current) => !current)}
-                        sx={{ bgcolor: "#dce8ef", color: "#2F4156" }}
-                      />
-                    </Paper>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {[
+                        { value: "pending", label: "Pending", color: "#64748b", bg: "#f1f5f9" },
+                        { value: "in_progress", label: "In Progress", color: "#3b82f6", bg: "#eff6ff" },
+                        { value: "completed", label: "Completed", color: "#10b981", bg: "#ecfdf5" },
+                        { value: "overdue", label: "Overdue", color: "#ef4444", bg: "#fef2f2" },
+                      ].map((opt) => (
+                        <Chip
+                          key={opt.value}
+                          label={opt.label}
+                          onClick={() => setStatus(opt.value)}
+                          sx={{
+                            bgcolor: status === opt.value ? opt.bg : "transparent",
+                            color: status === opt.value ? opt.color : "#94a3b8",
+                            border: `1px solid ${status === opt.value ? opt.color : "#e2e8f0"}`,
+                            fontWeight: status === opt.value ? 700 : 500,
+                            "&:hover": {
+                              bgcolor: opt.bg,
+                              borderColor: opt.color,
+                              opacity: 0.8,
+                            },
+                          }}
+                        />
+                      ))}
+                    </Stack>
                   </Box>
 
                   <Box>
@@ -344,9 +472,19 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
                     </Typography>
                     <Paper elevation={0} sx={{ p: 1.75, border: "1px solid #e5e7eb", borderRadius: 2.5 }}>
                       <Stack spacing={1.25}>
-                        <DetailRow label="Created" value={task?.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Just now"} />
-                        <DetailRow label="Created By" value="You" isAvatar />
-                        <DetailRow label="Last Updated" value={mode === "edit" ? "Recently" : "Not saved yet"} />
+                        <DetailRow
+                          label="Created"
+                          value={task?.createdAt ? new Date(task.createdAt).toLocaleDateString() : "Pending save"}
+                        />
+                        <DetailRow
+                          label="Created By"
+                          value={task?.manager?.name ?? "You"}
+                          isAvatar
+                        />
+                        <DetailRow
+                          label="Last Updated"
+                          value={task?.updatedAt ? new Date(task.updatedAt).toLocaleDateString() : "Not saved yet"}
+                        />
                         <DetailRow
                           label="Assignees"
                           value={selectedAssigneeNames.length ? `${selectedAssigneeNames.length} selected` : "None"}
@@ -361,8 +499,16 @@ export function TaskDialogProvider({ children }: { children: ReactNode }) {
                       Quick Actions
                     </Typography>
                     <Stack spacing={1}>
-                      <QuickAction icon={<ContentCopyRoundedIcon fontSize="small" />} label="Duplicate Task" />
-                      <QuickAction icon={<NotificationsActiveRoundedIcon fontSize="small" />} label="Set Reminder" />
+                      <QuickAction
+                        icon={<ContentCopyRoundedIcon fontSize="small" />}
+                        label="Duplicate Task"
+                        onClick={handleDuplicate}
+                      />
+                      <QuickAction
+                        icon={<NotificationsActiveRoundedIcon fontSize="small" />}
+                        label="Set Reminder"
+                        onClick={handleSetReminder}
+                      />
                       {mode === "edit" && selectedTaskId ? (
                         <QuickAction
                           icon={<DeleteOutlineRoundedIcon fontSize="small" />}

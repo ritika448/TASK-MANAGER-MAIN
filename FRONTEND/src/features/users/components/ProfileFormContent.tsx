@@ -196,8 +196,9 @@ export function ProfileFormContent({
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>Country</InputLabel>
+              <InputLabel id="profile-country-label">Country</InputLabel>
               <Select
+                labelId="profile-country-label"
                 value={form.country}
                 label="Country"
                 onChange={(event) =>
@@ -219,8 +220,9 @@ export function ProfileFormContent({
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>State</InputLabel>
+              <InputLabel id="profile-state-label">State</InputLabel>
               <Select
+                labelId="profile-state-label"
                 value={form.state}
                 label="State"
                 disabled={!form.country}
@@ -242,8 +244,9 @@ export function ProfileFormContent({
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
             <FormControl fullWidth>
-              <InputLabel>City</InputLabel>
+              <InputLabel id="profile-city-label">City</InputLabel>
               <Select
+                labelId="profile-city-label"
                 value={form.city}
                 label="City"
                 disabled={!form.state}
