@@ -38,6 +38,22 @@ function formatUser(user) {
     managerName,
     managerEmail,
     profileImage: user.profileImage ?? "",
+    workspaceName: user.workspaceName ?? "TaskFlow Workspace",
+    timezone: user.timezone ?? "asia-kolkata",
+    defaultTaskPriority: user.defaultTaskPriority ?? "medium",
+    defaultTaskView: user.defaultTaskView ?? "list",
+    notificationSettings: user.notificationSettings ?? {
+      email: true,
+      dueDates: true,
+      weeklySummary: false,
+      push: true,
+    },
+    appearanceSettings: user.appearanceSettings ?? {
+      theme: "light",
+      secureSession: true,
+      twoFactorEnabled: false,
+      multiSessionSignOut: true,
+    },
   };
 }
 
@@ -154,6 +170,12 @@ export async function updateUser(req, res, next) {
       role,
       password,
       updatePassword = false,
+      workspaceName,
+      timezone,
+      defaultTaskPriority,
+      defaultTaskView,
+      notificationSettings,
+      appearanceSettings,
     } = req.body;
 
     if (!firstName || !lastName || !emailId) {
@@ -183,6 +205,12 @@ export async function updateUser(req, res, next) {
       role: existingUser.role ?? "employee",
       managerId: existingUser.managerId ?? req.userId,
       ...location,
+      workspaceName: workspaceName ?? existingUser.workspaceName,
+      timezone: timezone ?? existingUser.timezone,
+      defaultTaskPriority: defaultTaskPriority ?? existingUser.defaultTaskPriority,
+      defaultTaskView: defaultTaskView ?? existingUser.defaultTaskView,
+      notificationSettings: notificationSettings ?? existingUser.notificationSettings,
+      appearanceSettings: appearanceSettings ?? existingUser.appearanceSettings,
     };
 
     if (updatePassword && password) {

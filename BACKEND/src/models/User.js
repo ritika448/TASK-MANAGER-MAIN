@@ -77,6 +77,34 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    workspaceName: {
+      type: String,
+      default: "TaskFlow Workspace",
+    },
+    timezone: {
+      type: String,
+      default: "asia-kolkata",
+    },
+    defaultTaskPriority: {
+      type: String,
+      default: "medium",
+    },
+    defaultTaskView: {
+      type: String,
+      default: "list",
+    },
+    notificationSettings: {
+      email: { type: Boolean, default: true },
+      dueDates: { type: Boolean, default: true },
+      weeklySummary: { type: Boolean, default: false },
+      push: { type: Boolean, default: true },
+    },
+    appearanceSettings: {
+      theme: { type: String, default: "light" },
+      secureSession: { type: Boolean, default: true },
+      twoFactorEnabled: { type: Boolean, default: false },
+      multiSessionSignOut: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,

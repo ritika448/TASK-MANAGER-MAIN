@@ -14,7 +14,17 @@ function formatTask(task) {
     })),
     dueDate: task.dueDate,
     priority: task.priority,
+    status: task.status ?? "pending",
     completed: task.completed,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+    manager: task.managerId
+      ? {
+          id: task.managerId._id ?? task.managerId.id ?? task.managerId,
+          name: task.managerId.firstName ? `${task.managerId.firstName} ${task.managerId.lastName}`.trim() : "System",
+          emailId: task.managerId.emailId,
+        }
+      : null,
   };
 }
 
@@ -27,7 +37,7 @@ export async function getTaskList(req, res, next) {
   try {
     const role = await getCurrentUserRole(req.userId);
     const query = role === "employee" ? { assignedUserIds: req.userId } : { managerId: req.userId };
-    const tasks = await Task.find(query).populate("assignedUserIds").sort({ createdAt: -1 });
+    const tasks = await Task.find(query).populate("assignedUserIds").populate("managerId").sort({ createdAt: -1 });
     return res.status(200).json(tasks.map(formatTask));
   } catch (error) {
     return next(error);
@@ -36,18 +46,25 @@ export async function getTaskList(req, res, next) {
 
 export async function getTaskModel(req, res, next) {
   try {
-    const task = await Task.findById(req.params.id).populate("assignedUserIds");
+    const task = await Task.findById(req.params.id).populate("assignedUserIds").populate("managerId");
     if (!task) {
       return res.status(404).json({ message: "Task not found." });
     }
 
     const role = await getCurrentUserRole(req.userId);
     if (role === "employee") {
-      if (!task.assignedUserIds.some((user) => String(user._id ?? user.id) === String(req.userId))) {
+      const isAssigned = task.assignedUserIds.some((user) => {
+        const userId = user._id ?? user.id ?? user;
+        return String(userId) === String(req.userId);
+      });
+      if (!isAssigned) {
         return res.status(403).json({ message: "You can only view your assigned tasks." });
       }
-    } else if (String(task.managerId) !== String(req.userId)) {
-      return res.status(403).json({ message: "You can only view your managed tasks." });
+    } else {
+      const taskManagerId = task.managerId._id ?? task.managerId.id ?? task.managerId;
+      if (String(taskManagerId) !== String(req.userId)) {
+        return res.status(403).json({ message: "You can only view your managed tasks." });
+      }
     }
 
     return res.status(200).json(formatTask(task));
@@ -58,7 +75,7 @@ export async function getTaskModel(req, res, next) {
 
 export async function createTask(req, res, next) {
   try {
-    const { taskName, description = "", assignedUserIds = [], dueDate = null, priority = 1 } = req.body;
+    const { taskName, description = "", assignedUserIds = [], dueDate = null, priority = 1, status = "pending" } = req.body;
     if (!taskName?.trim() || !Array.isArray(assignedUserIds) || assignedUserIds.length === 0) {
       return res.status(400).json({ message: "Task name and at least one assignee are required." });
     }
@@ -75,9 +92,10 @@ export async function createTask(req, res, next) {
       managerId: req.userId,
       dueDate: dueDate || null,
       priority,
+      status,
     });
 
-    const populatedTask = await Task.findById(task.id).populate("assignedUserIds");
+    const populatedTask = await Task.findById(task.id).populate("assignedUserIds").populate("managerId");
 
     void notificationHub.notifyMany(assignedUserIds, {
       type: "task_assigned",
@@ -95,7 +113,8 @@ export async function createTask(req, res, next) {
 
 export async function updateTask(req, res, next) {
   try {
-    const { taskName, description = "", assignedUserIds = [], dueDate = null, priority = 1, completed = false } = req.body;
+    const { taskName, description = "", assignedUserIds = [], dueDate = null, priority = 1, status = "pending" } = req.body;
+    const completed = status === "completed";
     if (!taskName?.trim() || !Array.isArray(assignedUserIds) || assignedUserIds.length === 0) {
       return res.status(400).json({ message: "Task name and at least one assignee are required." });
     }
@@ -117,7 +136,7 @@ export async function updateTask(req, res, next) {
         completedOn: completed ? new Date() : null,
       },
       { new: true },
-    ).populate("assignedUserIds");
+    ).populate("assignedUserIds").populate("managerId");
 
     if (!task) {
       return res.status(404).json({ message: "Task not found." });
